@@ -9,6 +9,8 @@
 // external synchronization, but if any of the threads may call a
 // non-const method, all threads accessing the same Status must use
 // external synchronization.
+//
+// Status是自定义状态，枚举了错误类型，包含1条错误信息
 
 #ifndef STORAGE_LEVELDB_INCLUDE_STATUS_H_
 #define STORAGE_LEVELDB_INCLUDE_STATUS_H_
@@ -23,19 +25,27 @@ namespace leveldb {
 
 class LEVELDB_EXPORT Status {
  public:
+  // 默认构造函数
   // Create a success status.
   Status() noexcept : state_(nullptr) {}
+  // 析构函数
   ~Status() { delete[] state_; }
 
+  // 复制构造函数
   Status(const Status& rhs);
+  // 赋值操作符
   Status& operator=(const Status& rhs);
 
+  // 复制构造函数
   Status(Status&& rhs) noexcept : state_(rhs.state_) { rhs.state_ = nullptr; }
+  // 复赋值操作符
   Status& operator=(Status&& rhs) noexcept;
 
+  // 返回一个成功是Status
   // Return a success status.
   static Status OK() { return Status(); }
 
+  // 生成不同的错误状态
   // Return error status of an appropriate type.
   static Status NotFound(const Slice& msg, const Slice& msg2 = Slice()) {
     return Status(kNotFound, msg, msg2);
@@ -53,9 +63,11 @@ class LEVELDB_EXPORT Status {
     return Status(kIOError, msg, msg2);
   }
 
+  // 判断Status是否成功
   // Returns true iff the status indicates success.
   bool ok() const { return (state_ == nullptr); }
 
+  /* 判断是否某种错误状态系列函数 */
   // Returns true iff the status indicates a NotFound error.
   bool IsNotFound() const { return code() == kNotFound; }
 
@@ -71,38 +83,46 @@ class LEVELDB_EXPORT Status {
   // Returns true iff the status indicates an InvalidArgument.
   bool IsInvalidArgument() const { return code() == kInvalidArgument; }
 
+  // 错误码和错误信息转string
   // Return a string representation of this status suitable for printing.
   // Returns the string "OK" for success.
   std::string ToString() const;
 
  private:
+  // 错误码枚举
   enum Code {
     kOk = 0,
     kNotFound = 1,
     kCorruption = 2,
     kNotSupported = 3,
-    kInvalidArgument = 4,
-    kIOError = 5
+    kInvalidArgument = 4, //无效参数
+    kIOError = 5 //IO错误
   };
 
+  // 返回错误码
   Code code() const {
     return (state_ == nullptr) ? kOk : static_cast<Code>(state_[4]);
   }
 
+  // 构造函数
   Status(Code code, const Slice& msg, const Slice& msg2);
+  // 复制状态
   static const char* CopyState(const char* s);
 
   // OK status has a null state_.  Otherwise, state_ is a new[] array
   // of the following form:
-  //    state_[0..3] == length of message
-  //    state_[4]    == code
-  //    state_[5..]  == message
+  //    state_[0..3] == length of message 错误信息的长度
+  //    state_[4]    == code 错误码
+  //    state_[5..]  == message 错误信息
   const char* state_;
 };
 
+// 复制构造函数
 inline Status::Status(const Status& rhs) {
   state_ = (rhs.state_ == nullptr) ? nullptr : CopyState(rhs.state_);
 }
+
+// 重载赋值操作符
 inline Status& Status::operator=(const Status& rhs) {
   // The following condition catches both aliasing (when this == &rhs),
   // and the common case where both rhs and *this are ok.
@@ -112,6 +132,8 @@ inline Status& Status::operator=(const Status& rhs) {
   }
   return *this;
 }
+
+// 重载赋值操作符
 inline Status& Status::operator=(Status&& rhs) noexcept {
   std::swap(state_, rhs.state_);
   return *this;
